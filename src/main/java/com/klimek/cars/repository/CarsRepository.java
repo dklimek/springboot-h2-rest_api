@@ -1,12 +1,18 @@
 package com.klimek.cars.repository;
 
+import com.klimek.cars.exception.ProductNotRentException;
+import com.klimek.cars.exception.ProductNotfoundException;
+import com.klimek.cars.exception.ProductRentedException;
 import com.klimek.cars.model.Cars;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+
+import static com.klimek.cars.model.CarsConstatns.*;
 
 @Repository
 public class CarsRepository {
@@ -16,55 +22,59 @@ public class CarsRepository {
 
     /* Getting all */
     public List<Cars> getAllCars() {
-        List<Cars> items = template.query("select * from CARS", (result,
-                rowNum) -> new Cars(
-                        result.getLong("id"),
-                        result.getString("mark"),
-                        result.getString("colour"),
-                        result.getString("yearOfProduction"),
-                        result.getString("peopleCapacity"),
-                        result.getString("numberOfDoors"),
-                        result.getString("gearbox"),
-                        result.getBoolean("rented")
-        ));
-        return items;
+        try {
+            return template.query("select * from CARS", (result,
+                                                         rowNum) -> new Cars(
+                    result.getLong(CARS_ID),
+                    result.getString(CARS_MARK),
+                    result.getString(CARS_COLOUR),
+                    result.getString(CARS_YEAR_OF_PRODUCTION),
+                    result.getString(CARS_PEOPLE_CAPACITY),
+                    result.getString(CARS_NUMBER_OF_DOORS),
+                    result.getString(CARS_GEARBOX),
+                    result.getBoolean(CARS_RENTED)
+            ));
+        } catch (EmptyResultDataAccessException e) {
+            throw new ProductNotfoundException();
+        }
     }
-
     /* Getting all name by query string */
 
     public List<Cars> getCarsToRent() {
-        List<Cars> items = template.query("SELECT * FROM CARS WHERE RENTED=false", (result,
-                rowNum) -> new Cars(
-                result.getLong("id"),
-                result.getString("mark"),
-                result.getString("colour"),
-                result.getString("yearOfProduction"),
-                result.getString("peopleCapacity"),
-                result.getString("numberOfDoors"),
-                result.getString("gearbox"),
-                result.getBoolean("rented")
-        ));
-        return items;
+        try {
+            return template.query("SELECT * FROM CARS WHERE RENTED=false", (result,
+                                                                            rowNum) -> new Cars(
+                    result.getLong(CARS_ID),
+                    result.getString(CARS_MARK),
+                    result.getString(CARS_COLOUR),
+                    result.getString(CARS_YEAR_OF_PRODUCTION),
+                    result.getString(CARS_PEOPLE_CAPACITY),
+                    result.getString(CARS_NUMBER_OF_DOORS),
+                    result.getString(CARS_GEARBOX),
+                    result.getBoolean(CARS_RENTED)
+            ));
+        }catch (EmptyResultDataAccessException e){
+            throw new ProductNotfoundException();
+        }
     }
 
     /* Getting by id */
     public Cars getCar(int search) {
         try {
             String query = "SELECT * FROM CARS WHERE ID =?";
-            Cars items = template.queryForObject(query, (result,
-                                                         rowNum) -> new Cars(
-                    result.getLong("id"),
-                    result.getString("mark"),
-                    result.getString("colour"),
-                    result.getString("yearOfProduction"),
-                    result.getString("peopleCapacity"),
-                    result.getString("numberOfDoors"),
-                    result.getString("gearbox"),
-                    result.getBoolean("rented")
-            ),search);;
-            return items;
-        }catch (Exception e){
-            return new Cars();
+            return template.queryForObject(query, (result,
+                                                   rowNum) -> new Cars(
+                    result.getLong(CARS_ID),
+                    result.getString(CARS_MARK),
+                    result.getString(CARS_COLOUR),
+                    result.getString(CARS_YEAR_OF_PRODUCTION),
+                    result.getString(CARS_PEOPLE_CAPACITY),
+                    result.getString(CARS_NUMBER_OF_DOORS),
+                    result.getString(CARS_GEARBOX),
+                    result.getBoolean(CARS_RENTED)
+            ),search);
+        }catch (EmptyResultDataAccessException e){
+            throw new ProductNotfoundException();
         }
 
     }
@@ -88,18 +98,18 @@ public class CarsRepository {
         String updated = "UPDATE  CARS SET mark =?2,colour =?3,yearOfProduction =?4,peopleCapacity =?5,numberOfDoors =?6,gearbox =?7 WHERE ID =?1";
         try {
             Cars items = template.queryForObject(checkid, (result, rowNum) -> new Cars(
-                    result.getLong("id"),
-                    result.getString("mark"),
-                    result.getString("colour"),
-                    result.getString("yearOfProduction"),
-                    result.getString("peopleCapacity"),
-                    result.getString("numberOfDoors"),
-                    result.getString("gearbox"),
-                    result.getBoolean("rented")
+                    result.getLong(CARS_ID),
+                    result.getString(CARS_MARK),
+                    result.getString(CARS_COLOUR),
+                    result.getString(CARS_YEAR_OF_PRODUCTION),
+                    result.getString(CARS_PEOPLE_CAPACITY),
+                    result.getString(CARS_NUMBER_OF_DOORS),
+                    result.getString(CARS_GEARBOX),
+                    result.getBoolean(CARS_RENTED)
             ), id);
             template.update(updated, id, mark, colour, yearOfProduction, peopleCapacity, numberOfDoors, gearbox);
             return id;
-        } catch (Exception e)
+        } catch (EmptyResultDataAccessException e)
         {
             return template.update(insertion, id, mark, colour, yearOfProduction, peopleCapacity, numberOfDoors, gearbox, rented);
         }
@@ -111,18 +121,21 @@ public class CarsRepository {
      *  get the last car
      */
     public Cars lastCar() {
-        Cars items = template.queryForObject("SELECT * from CARS WHERE id=(SELECT max(id) FROM CARS)", (result,
-                rowNum) -> new Cars(
-                result.getLong("id"),
-                result.getString("mark"),
-                result.getString("colour"),
-                result.getString("yearOfProduction"),
-                result.getString("peopleCapacity"),
-                result.getString("numberOfDoors"),
-                result.getString("gearbox"),
-                result.getBoolean("rented")
-        ));
-        return items;
+        try{
+            return template.queryForObject("SELECT * from CARS WHERE id=(SELECT max(id) FROM CARS)", (result,
+                                                                                                      rowNum) -> new Cars(
+                    result.getLong(CARS_ID),
+                    result.getString(CARS_MARK),
+                    result.getString(CARS_COLOUR),
+                    result.getString(CARS_YEAR_OF_PRODUCTION),
+                    result.getString(CARS_PEOPLE_CAPACITY),
+                    result.getString(CARS_NUMBER_OF_DOORS),
+                    result.getString(CARS_GEARBOX),
+                    result.getBoolean(CARS_RENTED)
+            ));
+        }catch (EmptyResultDataAccessException e) {
+            throw new ProductNotfoundException();
+        }
     }
 
     /* Delete an item */
@@ -136,17 +149,22 @@ public class CarsRepository {
     public int rentCar(int id) {
         String checkid = "SELECT * FROM CARS WHERE ID=?1 AND RENTED=false";
         String updated = "UPDATE  CARS SET rented=true WHERE ID =?1";
-        Cars items = template.queryForObject(checkid, (result, rowNum) -> new Cars(
-                result.getLong("id"),
-                result.getString("mark"),
-                result.getString("colour"),
-                result.getString("yearOfProduction"),
-                result.getString("peopleCapacity"),
-                result.getString("numberOfDoors"),
-                result.getString("gearbox"),
-                result.getBoolean("rented")
-        ), id);
-        return template.update(updated, id);
+        try{
+            Cars items = template.queryForObject(checkid, (result, rowNum) -> new Cars(
+                    result.getLong(CARS_ID),
+                    result.getString(CARS_MARK),
+                    result.getString(CARS_COLOUR),
+                    result.getString(CARS_YEAR_OF_PRODUCTION),
+                    result.getString(CARS_PEOPLE_CAPACITY),
+                    result.getString(CARS_NUMBER_OF_DOORS),
+                    result.getString(CARS_GEARBOX),
+                    result.getBoolean(CARS_RENTED)
+            ), id);
+            template.update(updated, id);
+            return id;
+        } catch (EmptyResultDataAccessException e) {
+            throw new ProductRentedException();
+        }
     }
     /**
      *  return the car with id
@@ -154,17 +172,23 @@ public class CarsRepository {
     public int returnCar(int id) {
         String checkid = "SELECT * FROM CARS WHERE ID=?1 AND RENTED=true ";
         String updated = "UPDATE  CARS SET rented=false WHERE ID =?1";
-        Cars items = template.queryForObject(checkid, (result, rowNum) -> new Cars(
-                result.getLong("id"),
-                result.getString("mark"),
-                result.getString("colour"),
-                result.getString("yearOfProduction"),
-                result.getString("peopleCapacity"),
-                result.getString("numberOfDoors"),
-                result.getString("gearbox"),
-                result.getBoolean("rented")
-        ), id);
-        return template.update(updated, id);
+        try {
+            Cars items = template.queryForObject(checkid, (result, rowNum) -> new Cars(
+                    result.getLong(CARS_ID),
+                    result.getString(CARS_MARK),
+                    result.getString(CARS_COLOUR),
+                    result.getString(CARS_YEAR_OF_PRODUCTION),
+                    result.getString(CARS_PEOPLE_CAPACITY),
+                    result.getString(CARS_NUMBER_OF_DOORS),
+                    result.getString(CARS_GEARBOX),
+                    result.getBoolean(CARS_RENTED)
+            ), id);
+            template.update(updated, id);
+            return id;
+        } catch (EmptyResultDataAccessException e) {
+            throw new ProductNotRentException();
+        }
+
 
     }
 }

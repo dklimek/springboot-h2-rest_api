@@ -2,39 +2,41 @@ package com.klimek.cars.controller;
 
 import java.util.List;
 
+import com.klimek.cars.api.ApiConstants;
+import com.klimek.cars.exception.ProductNotRentException;
+import com.klimek.cars.exception.ProductNotfoundException;
+import com.klimek.cars.exception.ProductRentedException;
 import com.klimek.cars.model.Cars;
 import com.klimek.cars.repository.CarsRepository;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import static com.klimek.cars.api.ApiConstants.*;
+import static com.klimek.cars.model.CarsConstatns.*;
+@RequestMapping(API_PATH)
 @RestController
 public class CarsController {
 
     @Autowired
     CarsRepository carRepo;
 
-    @GetMapping("/api/cars")
+    @GetMapping(CARS_GET_ALL_PATH)
     @ResponseBody
     public List<Cars> getAll() {
             return carRepo.getAllCars();
     }
 
-    @PostMapping(value = "/api/cars", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = CARS_GET_ALL_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
     public @ResponseBody
-    Cars newCar(@RequestBody String payload) {
+    ResponseEntity<?> newCar(@RequestBody String payload) {
         int added = 0;
         int updatedID = 0;
         Cars rs;
@@ -45,13 +47,13 @@ public class CarsController {
             JSONObject jsonObject = (JSONObject) object;
             // If 'id' in JSON payload is not null, get me the true int value of 'id' or set it to 0
             int i = jsonObject.get("id") != null ? Double.valueOf(jsonObject.get("id").toString()).intValue() : 0;
-            String mark = (String) jsonObject.get("mark");
-            String colour = (String) jsonObject.get("colour");
-            String yearOfProduction = (String) jsonObject.get("yearOfProduction");
-            String peopleCapacity = (String) jsonObject.get("peopleCapacity");
-            String numberOfDoors = (String) jsonObject.get("numberOfDoors");
-            String gearbox = (String) jsonObject.get("gearbox");
-            Boolean rented = (Boolean) jsonObject.get("rented");
+            String mark = (String) jsonObject.get(CARS_MARK);
+            String colour = (String) jsonObject.get(CARS_COLOUR);
+            String yearOfProduction = (String) jsonObject.get(CARS_YEAR_OF_PRODUCTION);
+            String peopleCapacity = (String) jsonObject.get(CARS_PEOPLE_CAPACITY);
+            String numberOfDoors = (String) jsonObject.get(CARS_NUMBER_OF_DOORS);
+            String gearbox = (String) jsonObject.get(CARS_GEARBOX);
+            Boolean rented = (Boolean) jsonObject.get(CARS_RENTED);
 
             // If 'id' is greater than zero, we are updating an existing car
             if (i > 0) {
@@ -61,32 +63,32 @@ public class CarsController {
             } else {
                 added = carRepo.addCar(mark, colour, yearOfProduction, peopleCapacity, numberOfDoors, gearbox, rented);
             }
-        } catch (Exception e) {
-            System.out.println(e);
-            return new Cars(null, "The car id " + updatedID + " does not exist.");
+        } catch (ParseException e) {
+            return new ResponseEntity<String>("Check data.",HttpStatus.BAD_REQUEST);
         }
-        if (added == 0) {
-            System.out.println("added:" + added);
-            System.out.println("id:" + updatedID);
-            rs = carRepo.getCar(updatedID);
-        } else {
-            rs = carRepo.lastCar();
-        }
-        return new Cars(rs.getId(), rs.getMark(), rs.getColour(), rs.getYearOfProduction(), rs.getPeopleCapacity(), rs.getNumberOfDoors(),rs.getGearbox(),rs.isRented());
-
-    }
-
-    @GetMapping("/api/car/{id}")
-    public Cars getCarById(@PathVariable(value = "id") int carId) {
         try {
-            return carRepo.getCar(carId);
-        } catch (Exception e) {
-            return new Cars(null, "The note id " + carId + " does not exist.");
+            if (added == 0) {
+                rs = carRepo.getCar(updatedID);
+            } else {
+                rs = carRepo.lastCar();
+            }
+        }catch (ProductNotfoundException e){
+            return new ResponseEntity<String>("Check data.",HttpStatus.BAD_REQUEST);
         }
 
+        return new ResponseEntity(rs, HttpStatus.OK);
     }
 
-    @PostMapping("/api/cars/delete")
+    @GetMapping(CARS_GET_CAR_PATH)
+    public ResponseEntity<?> getCarById(@PathVariable(value = "id") int carId) {
+        try {
+            return new ResponseEntity(carRepo.getCar(carId), HttpStatus.OK);
+        } catch (ProductNotfoundException exception){
+            return new ResponseEntity<String>("Car not Found. Check data.",HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @PostMapping(CARS_DELETE_CAR_PATH)
     @ResponseBody
     public List<Cars> deleteItem(@RequestParam("id") int itemId) {
 
@@ -101,24 +103,24 @@ public class CarsController {
         return carRepo.getAllCars();
     }
 
-    @PostMapping("/api/cars/rent")
+    @PostMapping(CARS_RENT_CAR_PATH)
     @ResponseBody
     public ResponseEntity<?> rentCar(@RequestParam("id") int itemId) {
             try {
                 carRepo.rentCar(itemId);
                 return new ResponseEntity(carRepo.getCar(itemId), HttpStatus.OK);
-            } catch (Exception e){
+            } catch (ProductRentedException e){
                 return new ResponseEntity<String>("That cars is rented. Please chose other.",HttpStatus.BAD_REQUEST);
             }
     }
 
-    @PostMapping("/api/cars/return")
+    @PostMapping(CARS_RETURN_CAR_PATH)
     @ResponseBody
     public ResponseEntity<?> returnCar(@RequestParam("id") int itemId) {
         try {
             carRepo.returnCar(itemId);
             return new ResponseEntity(carRepo.getCar(itemId), HttpStatus.OK);
-        } catch (Exception e){
+        } catch (ProductNotRentException exception){
             return new ResponseEntity<String>("That cars isn't rented. Check data.",HttpStatus.BAD_REQUEST);
         }
     }
