@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-import static com.klimek.cars.model.CarsConstatns.*;
+import static com.klimek.cars.model.CarsConstants.*;
 
 @Repository
 public class CarsRepository {

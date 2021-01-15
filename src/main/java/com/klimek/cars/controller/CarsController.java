@@ -20,7 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import static com.klimek.cars.api.ApiConstants.*;
-import static com.klimek.cars.model.CarsConstatns.*;
+import static com.klimek.cars.model.CarsConstants.*;
 @RequestMapping(API_PATH)
 @RestController
 public class CarsController {
