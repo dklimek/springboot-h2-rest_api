@@ -1,10 +1,8 @@
 package com.klimek.cars.model;
 
-import lombok.NoArgsConstructor;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
-@NoArgsConstructor
 public final class CarsConstants {
     public static final String CARS_COLOUR = "colour";
     public static final String CARS_GEARBOX = "gearbox";
